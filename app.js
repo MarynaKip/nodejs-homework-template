@@ -22,4 +22,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: err.message })
 })
 
+app.listen(8080, (err) => {
+  if (err) {
+    console.error("Error at server launch:", err);
+  }
+  console.log(`Server works at port 8080`);
+});
+
 module.exports = app
