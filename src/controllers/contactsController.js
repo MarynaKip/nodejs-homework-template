@@ -5,46 +5,37 @@ const {
   updateContact,
   updateStatusContact,
   removeContact,
-} = require('../model/index')
+} = require('../services/contactsService')
 
 const listContactsController = async (req, res, next) => {
-  const list = await listContacts()
-  res.status(200).json({ list })
+  const { _id: owner } = req.user;
+  const { page = 1, limit = 5 } = req.query
+
+  const list = await listContacts(owner, { page, limit })
+  res.status(200).json({ list, page, limit })
 }
 
 const getContactByIdController = async (req, res, next) => {
   const { contactId } = req.params
-  const contact = await getContactById(contactId)
+  const { _id: owner } = req.user;
+
+  const contact = await getContactById(contactId, owner)
   return res.status(200).json({ contact })
 }
 
 const addContactController = async (req, res, next) => {
   const { name, email, phone } = req.body
+  const { _id: owner } = req.user;
 
-  // ADD CUSTOM EROOR HANDLER
-  if (!name) {
-    return res.status(400).json({ message: 'missing required name field' })
-  }
-  if (!email) {
-    return res.status(400).json({ message: 'missing required email field' })
-  }
-  if (!phone) {
-    return res.status(400).json({ message: 'missing required phone field' })
-  }
-
-  const returnContact = await addContact({ name, email, phone })
+  const returnContact = await addContact({ name, email, phone }, owner)
   res.status(200).json(returnContact)
 }
 
 const updateContactController = async (req, res, next) => {
   const { contactId } = req.params
-  const { name, email, phone } = req.body
+  const { _id: owner } = req.user;
 
-  if (!name && !email && !phone) {
-    return res.status(400).json({ message: 'missing fields' })
-  }
-
-  const updatedContact = await updateContact(contactId, req.body)
+  const updatedContact = await updateContact(contactId, req.body, owner)
 
   if (updatedContact) {
     return res.status(200).json({ updatedContact })
@@ -55,12 +46,13 @@ const updateContactController = async (req, res, next) => {
 const updateContactFavoriteController = async (req, res, next) => {
   const { contactId } = req.params
   const { favorite } = req.body
+  const { _id: owner } = req.user;
 
   if (!favorite) {
     return res.status(400).json({ message: 'missing field favorite' })
   }
 
-  const updatedContact = await updateStatusContact(contactId, { favorite })
+  const updatedContact = await updateStatusContact(contactId, { favorite }, owner)
 
   if (updatedContact) {
     return res.status(200).json({ updatedContact })
@@ -70,7 +62,9 @@ const updateContactFavoriteController = async (req, res, next) => {
 
 const removeContactController = async (req, res, next) => {
   const { contactId } = req.params
-  const result = await removeContact(contactId)
+  const { _id: owner } = req.user;
+
+  const result = await removeContact(contactId, owner)
   if (result) {
     return res.status(200).json({ message: result })
   }

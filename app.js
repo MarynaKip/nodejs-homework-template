@@ -4,8 +4,9 @@ require("dotenv").config();
 
 const app = express()
 
-const { connectMongo } = require('./src/model/connection')
-const { contactsRouter } = require('./src/routes/api/contacts')
+const { connectMongo } = require('./src/db/connection')
+const { contactsRouter } = require('./src/routes/api/contactsRouter')
+const { userRouter } = require('./src/routes/api/userRouter')
 
 const PORT = process.env.PORT || 8080;
 
@@ -15,6 +16,8 @@ app.use(logger(formatsLogger))
 app.use(express.json())
 
 app.use('/api/contacts', contactsRouter)
+app.use('/users', userRouter)
+
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })
@@ -40,12 +43,5 @@ const start = async () => {
 }
 
 start()
-
-// app.listen(8080, (err) => {
-//   if (err) {
-//     console.error("Error at server launch:", err);
-//   }
-//   console.log(`Server works at port 8080`);
-// });
 
 module.exports = app
