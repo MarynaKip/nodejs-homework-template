@@ -1,5 +1,9 @@
 const jwt = require('jsonwebtoken');
-const { subscriptionChange, registration, login, logout, current } = require('../services/userService')
+
+const { subscriptionChange,
+    registration,
+    login,
+    logout, avatarUpload } = require('../services/userService')
 
 const updateSubscriptionController = async (req, res, next) => {
     const { authorization } = req.headers
@@ -40,8 +44,7 @@ const loginController = async (req, res, next) => {
 }
 
 const logoutController = async (req, res, next) => {
-    const { authorization } = req.headers
-    const [, token] = authorization.split(" ")
+    const { token } = req
 
     const userDecode = jwt.decode(token, process.env.JWT_SECRET)
 
@@ -51,12 +54,7 @@ const logoutController = async (req, res, next) => {
 
 
 const currentController = async (req, res, next) => {
-    const { authorization } = req.headers
-    const [, token] = authorization.split(" ")
-
-    const userDecode = jwt.decode(token, process.env.JWT_SECRET)
-
-    const user = await current(userDecode._id)
+    const { user } = req
 
     return res.status(200).json({
         "email": user.email,
@@ -64,10 +62,18 @@ const currentController = async (req, res, next) => {
     })
 }
 
+const avatarUploadController = async (req, res) => {
+    const { user, file } = req
+    await avatarUpload(user._id, user.avatarURL, file.filename)
+
+    res.status(200).json({ avatarURL: user.avatarURL })
+}
+
 module.exports = {
     updateSubscriptionController,
     registrationController,
     loginController,
     logoutController,
-    currentController
+    currentController,
+    avatarUploadController
 }
