@@ -1,9 +1,14 @@
 const jwt = require('jsonwebtoken');
 
-const { subscriptionChange,
+const {
+    subscriptionChange,
     registration,
     login,
-    logout, avatarUpload } = require('../services/userService')
+    logout,
+    avatarUpload,
+    verification,
+    verificationResending
+} = require('../services/userService')
 
 const updateSubscriptionController = async (req, res, next) => {
     const { authorization } = req.headers
@@ -69,11 +74,32 @@ const avatarUploadController = async (req, res) => {
     res.status(200).json({ avatarURL: user.avatarURL })
 }
 
+const verificationController = async (req, res) => {
+    const { verificationToken } = req.params
+    await verification(verificationToken)
+
+    res.status(200).json({
+        message: 'Verification successful',
+    })
+}
+
+const verificationResendingController = async (req, res) => {
+    const { email } = req.body
+    await verificationResending(email)
+
+    res.status(200).json({
+        message: "Verification email sent",
+    })
+}
+
+
 module.exports = {
     updateSubscriptionController,
     registrationController,
     loginController,
     logoutController,
     currentController,
-    avatarUploadController
+    avatarUploadController,
+    verificationController,
+    verificationResendingController
 }

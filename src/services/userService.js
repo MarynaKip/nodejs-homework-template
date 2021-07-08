@@ -3,9 +3,11 @@ const jwt = require('jsonwebtoken');
 const gravatar = require('gravatar');
 var Jimp = require('jimp');
 const path = require("path");
+const { v4: uuidv4 } = require('uuid');
+const nodemailer = require("nodemailer");
 
 const { User } = require("../db/userModel")
-const { ConflictError, UnauthorizedError } = require('../helpers/errors')
+const { ValidationError, ConflictError, UnauthorizedError, NotFoundUserError } = require('../helpers/errors')
 
 const subscriptionChange = async (userId, subscription) => {
     await User
@@ -28,11 +30,37 @@ const registration = async (email, password) => {
         email, password,
         avatarURL: gravatar.url(email)
     })
+
+    const verificationToken = uuidv4()
+    user.verifyToken = verificationToken
+
     await user.save()
+
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+            user: 'test.sender12345678@gmail.com',
+            pass: 'Test.sender12345678@gmail.com@',
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
+
+    });
+
+    let info = await transporter.sendMail({
+        from: 'Mailer Test <test.sender12345678@gmail.com>',
+        to: user.email,
+        subject: "Please, verify your email!",
+        text: `Please, <a href="http://127.0.0.1:8080/users/verify/${verificationToken}/">confirm</a> your email address`,
+        html: `Please, <a href="http://127.0.0.1:8080/users/verify/${verificationToken}/">confirm</a> your email address`,
+    });
 }
 
 const login = async (email, password) => {
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, verify: true })
 
     if (!user || !await bcrypt.compare(password, user.password)) {
         throw new UnauthorizedError('Email or password is wrong')
@@ -73,4 +101,88 @@ const avatarUpload = async (userId, URL, fileName) => {
     await User.findOneAndUpdate({ _id: userId }, { $set: { avatarURL: filePath } }, { new: true })
 }
 
-module.exports = { subscriptionChange, registration, login, logout, avatarUpload }
+const verification = async (verificationToken) => {
+    const user = await User.findOne({
+        verifyToken: verificationToken,
+        verify: false
+    })
+    if (!user) {
+        throw new NotFoundUserError('User not found')
+    }
+
+    user.verify = true;
+    await user.save()
+
+
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+            user: 'test.sender12345678@gmail.com',
+            pass: 'Test.sender12345678@gmail.com@',
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
+
+    });
+
+    let info = await transporter.sendMail({
+        from: 'Mailer Test <test.sender12345678@gmail.com>',
+        to: user.email,
+        subject: "Thank you for registration!",
+        text: `You have been succesfully registrated. Thank you.`,
+        html: `You have been succesfully registrated. Thank you.`,
+    });
+}
+
+
+const verificationResending = async (email) => {
+    const user = await User.findOne({
+        email
+    })
+
+    if (!user) {
+        throw new ValidationError('Ошибка от Joi или другой библиотеки валидации')
+    }
+
+    if (user.verify === true) {
+        throw new ValidationError('Verification has already been passed')
+    }
+
+    const verificationToken = user.verifyToken
+
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+            user: 'test.sender12345678@gmail.com',
+            pass: 'Test.sender12345678@gmail.com@',
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
+
+    });
+
+    let info = await transporter.sendMail({
+        from: 'Mailer Test <test.sender12345678@gmail.com>',
+        to: user.email,
+        subject: "Please, verify your email!",
+        text: `Please, <a href="http://127.0.0.1:8080/users/verify/${verificationToken}/">confirm</a> your email address`,
+        html: `Please, <a href="http://127.0.0.1:8080/users/verify/${verificationToken}/">confirm</a> your email address`,
+    });
+}
+
+
+module.exports = {
+    subscriptionChange,
+    registration,
+    login,
+    logout,
+    avatarUpload,
+    verification,
+    verificationResending
+}
