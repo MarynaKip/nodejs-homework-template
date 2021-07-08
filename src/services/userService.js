@@ -1,5 +1,8 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const gravatar = require('gravatar');
+var Jimp = require('jimp');
+const path = require("path");
 
 const { User } = require("../db/userModel")
 const { ConflictError, UnauthorizedError } = require('../helpers/errors')
@@ -22,7 +25,8 @@ const registration = async (email, password) => {
         throw new ConflictError(`User with email: '${email}' already exists`)
     }
     const user = new User({
-        email, password
+        email, password,
+        avatarURL: gravatar.url(email)
     })
     await user.save()
 }
@@ -48,14 +52,25 @@ const logout = async (userId) => {
 
 }
 
-const current = async (userId) => {
-    const user = await User.findOne({ _id: userId })
+const avatarUpload = async (userId, URL, fileName) => {
+    const READ_FILE_DIR = path.resolve(`./tmp/${fileName}`);
+    const WRITE_FILE_DIR = path.resolve('./public/avatars');
+    const [, , , , imageNewName] = URL.split('/')
+    const [, extension] = fileName.split('.');
 
-    if (!user) {
-        throw new UnauthorizedError('Not authorized')
-    }
+    Jimp.read(READ_FILE_DIR)
+        .then(image => {
+            image
+                .resize(250, 250)
+                .write(`${WRITE_FILE_DIR}'\'${imageNewName}.${extension}`)
+        })
 
-    return user
+        .catch(err => {
+            console.log(err.message);
+        });
+
+    const filePath = `/avatars/${imageNewName}.${extension}`
+    await User.findOneAndUpdate({ _id: userId }, { $set: { avatarURL: filePath } }, { new: true })
 }
 
-module.exports = { subscriptionChange, registration, login, logout, current }
+module.exports = { subscriptionChange, registration, login, logout, avatarUpload }

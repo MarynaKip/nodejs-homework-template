@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
     token: {
         type: String,
         default: null,
-    }
+    },
+    avatarURL: String,
 })
 
 userSchema.pre('save', async function () {
