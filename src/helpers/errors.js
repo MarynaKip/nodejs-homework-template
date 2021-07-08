@@ -26,4 +26,11 @@ class UnauthorizedError extends ServiceError {
     }
 }
 
-module.exports = { ServiceError, ValidationError, ConflictError, UnauthorizedError }
+class NotFoundUserError extends ServiceError {
+    constructor(message) {
+        super(message);
+        this.status = 404;
+    }
+}
+
+module.exports = { ServiceError, ValidationError, ConflictError, UnauthorizedError, NotFoundUserError }

@@ -13,7 +13,9 @@ const {
     loginController,
     logoutController,
     currentController,
-    avatarUploadController
+    avatarUploadController,
+    verificationController,
+    verificationResendingController
 } = require('../../controllers/userController')
 
 const FILE_DIR = path.resolve('./tmp');
@@ -36,5 +38,7 @@ router.post("/login", authValidation, asyncWrapper(loginController));
 router.post("/logout", tokenMiddleware, asyncWrapper(logoutController));
 router.post("/current", tokenMiddleware, asyncWrapper(currentController));
 router.post('/avatars', tokenMiddleware, avatarMiddleware.single('avatar'), asyncWrapper(avatarUploadController))
+router.get('/verify/:verificationToken', asyncWrapper(verificationController))
+router.post('/verify', asyncWrapper(verificationResendingController))
 
 module.exports = { userRouter: router };
